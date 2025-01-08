@@ -3,3 +3,4 @@ asyncpg==0.30.0
 aioredis==2.0.1
 python-dotenv==1.0.1
 emoji==2.14.0
+pytz

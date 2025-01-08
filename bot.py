@@ -14,7 +14,7 @@ from handlers.creator_handlers import (
     process_reaction, set_limits_command, on_new_message, leaderboard_handler
 )
 from handlers.user_handlers import get_user_info_handler, add_user_handler
-from handlers.common_handlers import help_handler
+from handlers.common_handlers import help_handler, scheduler
 import aioredis
 
 logging.basicConfig(level=logging.INFO)
@@ -123,6 +123,9 @@ async def main():
     register_handlers(dp)
     # Инициализируем базу данных
     await on_startup(dp)
+
+# Запускаем планировщик
+    asyncio.create_task(scheduler(bot))
 
     # Запуск бота
     try:
