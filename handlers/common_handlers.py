@@ -92,20 +92,29 @@ async def get_user_role(bot: Bot, chat_id: int, user_id: int) -> str:
     chat_member = await bot.get_chat_member(chat_id, user_id)
 
     if isinstance(chat_member, ChatMemberOwner):
-        return "creator"
+        return "creator"  # Создатель чата
     elif isinstance(chat_member, ChatMemberAdministrator):
-        if chat_member.can_invite_users:
-            return "admin"
+        # Проверяем наличие прав администратора
+        if any([
+            chat_member.can_delete_messages,
+            chat_member.can_restrict_members,
+            chat_member.can_promote_members,
+            chat_member.can_change_info,
+            chat_member.can_pin_messages
+        ]):
+            return "admin"  # Полноценный администратор
+        elif chat_member.can_manage_chat or chat_member.can_invite_users:  # Ограниченные права
+            return "admin_without_rights"
         return "admin_without_rights"
     elif isinstance(chat_member, ChatMemberMember):
-        return "member"
+        return "member"  # Обычный пользователь
     elif isinstance(chat_member, ChatMemberRestricted):
-        return "restricted"
+        return "restricted"  # Ограниченный пользователь
     elif isinstance(chat_member, ChatMemberLeft):
-        return "left"
+        return "left"  # Пользователь покинул чат
     elif isinstance(chat_member, ChatMemberBanned):
-        return "banned"
-    return "unknown"
+        return "banned"  # Забаненный пользователь
+    return "unknown"  # Неизвестный статус
 
 
 # Назначение минимальных прав администратора
