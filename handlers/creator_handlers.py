@@ -821,7 +821,82 @@ async def get_settings_handler(message: Message, bot: Bot):
 
 
 
+async def ban_user_handler(message: Message, redis: aioredis.Redis, bot: Bot):
+    # Проверка прав вызывающего (доступно только для создателя и администраторов)
+    user_role = await get_user_role(bot, message.chat.id, message.from_user.id)
+    if user_role not in ["creator", "admin"]:
+        del_message = await message.answer("Эта команда доступна только для создателя и администраторов чата.")
+        await delete_message_after_delay(del_message, delay=5)
+        return
 
+    # Разбираем аргументы команды: ожидается один аргумент - user_id или username
+    args = message.text.split(' ', 1)
+    if len(args) != 2:
+        del_message = await message.reply("Неверный формат. Используйте команду: /ban <user_id/username>.")
+        await delete_message_after_delay(del_message, delay=5)
+        return
+
+    identifier = args[1].strip()
+    chat_id = message.chat.id
+
+    # Определяем target_user_id по идентификатору (если число, то это user_id, иначе ищем по username)
+    if identifier.isdigit():
+        target_user_id = int(identifier)
+    else:
+        target_user_id = await get_user_id_by_username(identifier, chat_id)
+        if not target_user_id:
+            del_message = await message.reply(f"Пользователь с username {identifier} не найден.")
+            await delete_message_after_delay(del_message, delay=5)
+            return
+
+    # Опционально: не даём забанить самого себя
+    if target_user_id == message.from_user.id:
+        del_message = await message.reply("Вы не можете забанить себя.")
+        await delete_message_after_delay(del_message, delay=5)
+        return
+
+    try:
+        # Параллельно получаем отображаемое имя пользователя и название чата
+        user_display_name_task = asyncio.create_task(get_user_display_name(bot, chat_id, target_user_id))
+        chat_display_name_task = asyncio.create_task(get_chat_display_name(bot, chat_id))
+        target_username, chat_name = await asyncio.gather(user_display_name_task, chat_display_name_task)
+
+        # Отзываем админские права (если они были у пользователя)
+        await bot.promote_chat_member(
+            chat_id, target_user_id,
+            can_change_info=False,
+            can_post_messages=False,
+            can_edit_messages=False,
+            can_delete_messages=False,
+            can_invite_users=False,
+            can_restrict_members=False,
+            can_pin_messages=False,
+            can_promote_members=False,
+            is_anonymous=False
+        )
+
+        # Баним пользователя из чата
+        await bot.ban_chat_member(chat_id, target_user_id)
+
+        # Удаляем пользователя из базы данных
+        query_delete_user = "DELETE FROM users WHERE user_id = $1 AND chat_id = $2"
+        await db.execute(query_delete_user, (target_user_id, chat_id))
+        logging.info(f"Пользователь {target_user_id} удалён из базы данных для чата {chat_id}.")
+
+        # Удаляем информацию о пользователе из кеша Redis
+        cache_key = f"user:{target_user_id}:{chat_id}"
+        await redis.delete(cache_key)
+        logging.info(f"Пользователь {target_user_id} удалён из кеша Redis по ключу {cache_key}.")
+
+        del_message = await message.reply(
+            f"Пользователь {target_username} был забанен в чате \"{chat_name}\" и удалён из базы данных и кеша."
+        )
+        await delete_message_after_delay(del_message, delay=5)
+
+    except Exception as e:
+        logging.error(f"Ошибка при бане пользователя {target_user_id}: {e}")
+        del_message = await message.reply("Произошла ошибка при попытке забанить пользователя.")
+        await delete_message_after_delay(del_message, delay=5)
 
 
 
