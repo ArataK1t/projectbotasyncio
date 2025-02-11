@@ -39,6 +39,7 @@ async def help_handler(message: types.Message, bot: Bot):
         "**Для администраторов:**\n\n"
         "/set_user_points <user_id/username> <points> - Установить очки пользователю\n"
         "/reset_user <user_id/username> - Сбросить данные пользователя\n"
+        "/ban <user_id/username> - Забанить пользователя\n"
         "/get_settings - Получить текущие настройки\n\n"
     )
     # Списки команд для каждой роли
