@@ -11,7 +11,7 @@ from handlers.creator_handlers import (
     list_ranks_handler, set_emotion_reward_handler, remove_emotion_handler, 
     list_emotions_handler, set_user_rank_handler, set_user_points_handler, 
     reset_user_handler, get_settings_handler, reset_all_handler,
-    process_reaction, set_limits_command, on_new_message, leaderboard_handler
+    process_reaction, set_limits_command, on_new_message, leaderboard_handler, ban_user_handler
 )
 from handlers.user_handlers import get_user_info_handler, add_user_handler
 from handlers.common_handlers import help_handler, scheduler
@@ -58,7 +58,7 @@ def register_handlers(dp: Dispatcher):
 
     # Хендлеры для пользователей
     router.message(Command("get_user_info"))(get_user_info_handler)
-    router.message(Command("start"))(add_user_handler)
+    router.message(Command("ban"))(ban_user_handler)
 
     # Общие хендлеры
     router.message(Command("help"))(help_handler)
