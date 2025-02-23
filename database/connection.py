@@ -151,8 +151,6 @@ async def safe_get_hash_field(redis: aioredis.Redis, key: str, field: str, conve
 
 
 
-# Функция для безопасного установки значений в Redis хэш с преобразованием значений
-# Функция для безопасного установления значений в Redis хэш с преобразованием значений
 # Функция для безопасного установления значений в Redis хэш с преобразованием значений
 async def set_hash_fields(redis: aioredis.Redis, key: str, mapping: dict, ttl: int = 86400):
     if mapping is None:
